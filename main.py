@@ -47,8 +47,15 @@ def connect():
     subprocess.run("netsh wlan connect name=\""+network['ssid']+"\"")
     os.remove(network['ssid']+".xml")
 
+###
+#Settings Frame
+frame_settings = tk.Frame()
+
+title_settings = tk.Label(master=frame_settings,  text="Settings", font=(22))
+title_settings.pack()
+
 #Title
-title_ssid = tk.Label(text="Available Networks")
+title_ssid = tk.Label(master=frame_settings,  text="Available Networks")
 title_ssid.pack()
 
 
@@ -61,6 +68,7 @@ ssids = [v.strip() for k,v in (p.split(':') for p in ls if 'SSID' in p)]
 for ssid in ssids:
     if ssid != "":
         btn_ssid = tk.Button(
+            master=frame_settings,  
             text=ssid,
             command=partial(
                 select_ssid, ssid
@@ -69,9 +77,10 @@ for ssid in ssids:
         btn_ssid.pack()
 
 #Get Network Password
-title_passphrase = tk.Label(text="Network Password")
+title_passphrase = tk.Label(master=frame_settings,  text="Network Password")
 title_passphrase.pack()
 entry_passphrase = tk.Entry(
+    master=frame_settings, 
     textvariable = passwordInput
 )
 entry_passphrase.pack()
@@ -79,10 +88,13 @@ entry_passphrase.pack()
 
 #Save Button
 btn_save = tk.Button(
+    master=frame_settings,  
     text="Connect",
     command=connect
 )
 btn_save.pack()
+
+frame_settings.pack()
 
 #Show Window Loop
 window.mainloop()
