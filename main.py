@@ -5,6 +5,8 @@ from functools import partial
 
 #Create Window
 window = tk.Tk()
+window.minsize(150,100)
+
 network = {
     "ssid":"",
     "password":""
@@ -13,6 +15,14 @@ passwordInput = tk.StringVar()
 
 def select_ssid(ssid):
     network["ssid"] = ssid
+
+def settings_open(event):
+    frame_picture.pack_forget()
+    frame_settings.pack()
+
+def settings_close():
+    frame_settings.pack_forget()
+    frame_picture.pack(fill="both")
 
 def connect():
     network["password"] = passwordInput.get()
@@ -94,7 +104,16 @@ btn_save = tk.Button(
 )
 btn_save.pack()
 
-frame_settings.pack()
+btn_close = tk.Button(
+    master=frame_settings,
+    text="Close",
+    command=settings_close
+)
+btn_close.pack()
+
+frame_picture = tk.Frame(bg="Black")
+frame_picture.bind("<Button-1>", settings_open)
+frame_picture.pack(fill="both")
 
 #Show Window Loop
 window.mainloop()
