@@ -1,7 +1,7 @@
 import tkinter as tk
-import subprocess
-import os
+import subprocess, os, requests, time
 from functools import partial
+from PIL import Image, ImageTk
 
 #Create Window
 window = tk.Tk()
@@ -12,6 +12,34 @@ network = {
     "password":""
 }
 passwordInput = tk.StringVar()
+lastDownload = 0
+
+def download_next(lastDownload):
+    #Checking if the last image update was more than 15 seconds ago
+    if time.time() - lastDownload > 15:
+        lastDownload = time.time()
+        with open('next.jpg', 'wb') as handle:
+            response = requests.get("https://upload.wikimedia.org/wikipedia/commons/a/ab/3Falls_Niagara.jpg", stream=True)
+
+            if not response.ok:
+                print(response)
+
+            for block in response.iter_content(1024):
+                if not block:
+                    break
+
+                handle.write(block)
+        loadImage()
+    return lastDownload
+
+def loadImage():
+    raw = Image.open("next.jpg")
+    image = ImageTk.PhotoImage(raw)
+
+    photo = tk.Label(master=frame_picture, image=image)
+    photo.image = image
+
+    photo.pack()
 
 def select_ssid(ssid):
     network["ssid"] = ssid
@@ -115,5 +143,8 @@ frame_picture = tk.Frame(bg="Black")
 frame_picture.bind("<Button-1>", settings_open)
 frame_picture.pack(fill="both")
 
+while True:
 #Show Window Loop
-window.mainloop()
+    lastDownload = download_next(lastDownload)
+    window.update_idletasks()
+    window.update()
