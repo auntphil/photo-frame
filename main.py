@@ -7,6 +7,8 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 #Create Window
 window = tk.Tk()
 window.minsize(150,100)
+window.attributes('-fullscreen', True)
+window.configure(bg="black")
 
 network = {
     "ssid":"",
@@ -55,7 +57,7 @@ def loadImage():
     #Creating a new photo
     #Saving to the Dictionary
     #Showing on Screen
-    photos[lastDownload] = tk.Label(master=frame_picture, image=image)
+    photos[lastDownload] = tk.Label(master=frame_picture, image=image, bg="black")
     photos[lastDownload].image = image
     photos[lastDownload].bind("<Button-1>", settings_open)
     photos[lastDownload].pack()
@@ -169,7 +171,7 @@ btn_exit = tk.Button(
 )
 btn_exit.pack()
 
-frame_picture = tk.Frame()
+frame_picture = tk.Frame(bg="black")
 frame_picture.pack(fill="both")
 
 while running:
