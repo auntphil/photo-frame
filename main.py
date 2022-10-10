@@ -1,7 +1,8 @@
 import tkinter as tk
 import subprocess, os, requests, time
 from functools import partial
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 #Create Window
 window = tk.Tk()
@@ -19,7 +20,7 @@ def download_next(lastDownload):
     if time.time() - lastDownload > 15:
         lastDownload = time.time()
         with open('next.jpg', 'wb') as handle:
-            response = requests.get("https://upload.wikimedia.org/wikipedia/commons/a/ab/3Falls_Niagara.jpg", stream=True)
+            response = requests.get("https://techsetta.com/wp-content/uploads/2019/08/Techsetta-background-cpu-pins.jpg", stream=True)
 
             if not response.ok:
                 print(response)
@@ -29,7 +30,7 @@ def download_next(lastDownload):
                     break
 
                 handle.write(block)
-        loadImage()
+            loadImage()
     return lastDownload
 
 def loadImage():
