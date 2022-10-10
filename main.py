@@ -1,5 +1,5 @@
 import tkinter as tk
-import subprocess, os, requests, time
+import subprocess, os, requests, time, json
 from functools import partial
 from PIL import Image, ImageTk, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -21,6 +21,13 @@ lastDownload = 0
 photos = {}
 running = True
 
+# Opening JSON file
+if os.path.isfile("settings.json"):
+    with open('settings.json', 'r') as openfile:
+        settings = json.load(openfile)
+else:
+    settings = {}
+
 def download_next():
     global lastDownload
     #Checking if the last image update was more than 15 seconds ago
@@ -35,25 +42,38 @@ def download_next():
         #setting the timestamp for the last loaded image
         lastDownload = time.time()
 
+        goodUrl = True
+
         #Downloading the new image
-        with open('next.jpg', 'wb') as handle:
-            response = requests.get("https://techsetta.com/wp-content/uploads/2019/08/Techsetta-background-cpu-pins.jpg", stream=True)
-        
-            if not response.ok:
-                print(response)
-        
-            for block in response.iter_content(1024):
-                if not block:
-                    break
-        
-                handle.write(block)
+        try:
+            with open('image.jpg', 'wb') as handle:
+                response = requests.get("http://{}/{}/image.jpg".format(settings["burl"],settings["pfid"]), stream=True)
+            
+                if not response.ok:
+                    print(response)
+                    goodUrl = False
+            
+                for block in response.iter_content(1024):
+                    if not block:
+                        break
+            
+                    handle.write(block)
+        except:
+            goodUrl = False
             
         #loading the new image to the screen
-        loadImage()
+        loadImage(goodUrl)
 
-def loadImage():
+def loadImage(goodUrl):
     global lastDownload, w, h
-    raw = Image.open("next.jpg")
+    if os.path.isfile("image.jpg") and goodUrl:
+            try:
+                raw = Image.open("image.jpg")
+            except:
+                raw = Image.open("no-image.jpg")
+    else:
+        raw = Image.open("no-image.jpg")
+
 
     #Getting Image Sizes
     imgWidth, imgHeight = raw.size
@@ -81,11 +101,22 @@ def settings_open(event):
 
 def settings_close():
     frame_settings.pack_forget()
-    frame_picture.pack(fill="both")
+    frame_picture.pack(expand=True)
 
-def connect():
-    network["password"] = passwordInput.get()
-    config = """<?xml version=\"1.0\"?>
+def save_settings():
+    settings["pfid"] = pfid.get()
+    settings["burl"] = burl.get()
+    # Serializing json
+    json_object = json.dumps(settings, indent=4)
+
+    # Writing JSON
+    with open("settings.json", "w") as outfile:
+        outfile.write(json_object)
+
+    if network['ssid'] != "":
+
+        network["password"] = passwordInput.get()
+        config = """<?xml version=\"1.0\"?>
 <WLANProfile xmlns="http://www.microsoft.com/networking/WLAN/profile/v1">
     <name>"""+network['ssid']+"""</name>
     <SSIDConfig>
@@ -110,11 +141,12 @@ def connect():
         </security>
     </MSM>
 </WLANProfile>"""
-    with open(network['ssid']+".xml",'w') as file:
-        file.write(config)
-    subprocess.run("netsh wlan add profile filename=\""+network['ssid']+".xml\"")
-    subprocess.run("netsh wlan connect name=\""+network['ssid']+"\"")
-    os.remove(network['ssid']+".xml")
+        with open(network['ssid']+".xml",'w') as file:
+            file.write(config)
+        subprocess.run("netsh wlan add profile filename=\""+network['ssid']+".xml\"")
+        subprocess.run("netsh wlan connect name=\""+network['ssid']+"\"")
+        os.remove(network['ssid']+".xml")
+    settings_close()
 
 def exit_program():
     global running
@@ -151,25 +183,50 @@ for ssid in ssids:
 
 #Get Network Password
 title_passphrase = tk.Label(master=frame_settings,  text="Network Password")
-title_passphrase.pack()
 entry_passphrase = tk.Entry(
     master=frame_settings, 
     textvariable = passwordInput
 )
+title_passphrase.pack()
 entry_passphrase.pack()
 
+#Get Photo Frame ID
+title_pfid = tk.Label(master=frame_settings,  text="Photo Frame ID")
+
+pfid = tk.StringVar()
+entry_pfid = tk.Entry(
+    master=frame_settings, 
+    textvariable = pfid
+)
+if "pfid" in settings:
+    entry_pfid.insert(0,settings["pfid"])
+title_pfid.pack()
+entry_pfid.pack()
+
+#Get Photo Base URL
+title_burl = tk.Label(master=frame_settings,  text="Base URL")
+
+burl = tk.StringVar()
+entry_burl = tk.Entry(
+    master=frame_settings, 
+    textvariable = burl
+)
+if "burl" in settings:
+    entry_burl.insert(0,settings["burl"])
+title_burl.pack()
+entry_burl.pack()
 
 #Save Button
 btn_save = tk.Button(
     master=frame_settings,  
-    text="Connect",
-    command=connect
+    text="Save & Close",
+    command=save_settings
 )
 btn_save.pack()
 
 btn_close = tk.Button(
     master=frame_settings,
-    text="Close",
+    text="Cancel",
     command=settings_close
 )
 btn_close.pack()
