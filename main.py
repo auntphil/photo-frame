@@ -4,9 +4,11 @@ from functools import partial
 from PIL import Image, ImageTk, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+
 #Create Window
 window = tk.Tk()
-window.minsize(150,100)
+w, h = window.winfo_screenwidth(), window.winfo_screenheight()
+window.geometry("%dx%d+0+0" % (w, h))
 window.attributes('-fullscreen', True)
 window.configure(bg="black")
 
@@ -50,8 +52,15 @@ def download_next():
         loadImage()
 
 def loadImage():
-    global lastDownload
+    global lastDownload, w, h
     raw = Image.open("next.jpg")
+
+    #Getting Image Sizes
+    imgWidth, imgHeight = raw.size
+    ratio = min(w/imgWidth, h/imgHeight)
+    imgWidth = int(imgWidth*ratio)
+    imgHeight = int(imgHeight*ratio)
+    raw = raw.resize((imgWidth, imgHeight), Image.Resampling.LANCZOS)
     image = ImageTk.PhotoImage(raw)
 
     #Creating a new photo
@@ -59,8 +68,9 @@ def loadImage():
     #Showing on Screen
     photos[lastDownload] = tk.Label(master=frame_picture, image=image, bg="black")
     photos[lastDownload].image = image
+    photos[lastDownload].place(relx = 0.5, rely = 0.5, anchor="c")
     photos[lastDownload].bind("<Button-1>", settings_open)
-    photos[lastDownload].pack()
+    photos[lastDownload].pack(expand=True)
 
 def select_ssid(ssid):
     network["ssid"] = ssid
@@ -172,7 +182,7 @@ btn_exit = tk.Button(
 btn_exit.pack()
 
 frame_picture = tk.Frame(bg="black")
-frame_picture.pack(fill="both")
+frame_picture.pack(fill="both", expand=True)
 
 while running:
 #Show Window Loop
