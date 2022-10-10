@@ -15,6 +15,7 @@ network = {
 passwordInput = tk.StringVar()
 lastDownload = 0
 photos = {}
+running = True
 
 def download_next():
     global lastDownload
@@ -63,7 +64,6 @@ def select_ssid(ssid):
     network["ssid"] = ssid
 
 def settings_open(event):
-    print('openSettings')
     frame_picture.pack_forget()
     frame_settings.pack()
 
@@ -103,6 +103,10 @@ def connect():
     subprocess.run("netsh wlan add profile filename=\""+network['ssid']+".xml\"")
     subprocess.run("netsh wlan connect name=\""+network['ssid']+"\"")
     os.remove(network['ssid']+".xml")
+
+def exit_program():
+    global running
+    running = False
 
 ###
 #Settings Frame
@@ -158,10 +162,17 @@ btn_close = tk.Button(
 )
 btn_close.pack()
 
+btn_exit = tk.Button(
+    master=frame_settings,
+    text="Exit Program",
+    command=exit_program
+)
+btn_exit.pack()
+
 frame_picture = tk.Frame()
 frame_picture.pack(fill="both")
 
-while True:
+while running:
 #Show Window Loop
     download_next()
     window.update_idletasks()
