@@ -1,7 +1,7 @@
 import tkinter as tk
 import subprocess, os, requests, time, json
-from functools import partial
 from PIL import Image, ImageTk, ImageFile
+from functools import partial
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
@@ -47,7 +47,7 @@ def download_next():
         #Downloading the new image
         try:
             with open('image.jpg', 'wb') as handle:
-                response = requests.get("http://{}/{}/image.jpg".format(settings["burl"],settings["pfid"]), stream=True)
+                response = requests.get("http://{}/{}/current.jpg".format(settings["burl"],settings["pfid"]), stream=True)
             
                 if not response.ok:
                     print(response)
