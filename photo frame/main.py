@@ -44,6 +44,13 @@ def download_next():
 
         goodUrl = True
 
+        try:
+            #Triggering Script
+            response = requests.get("http://{}/next.php?pfid={}&height={}&width={}".format(settings["burl"],settings["pfid"],h,w))
+            print(response)
+        except:
+            goodUrl = False
+
         #Downloading the new image
         try:
             with open('image.jpg', 'wb') as handle:
