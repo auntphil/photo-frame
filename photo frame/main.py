@@ -12,6 +12,7 @@ window.attributes('-fullscreen', True)
 window.configure(bg="black", cursor="none")
 
 
+previousPhoto = 0
 lastDownload = time.time()
 photos = {}
 running = True
@@ -146,6 +147,11 @@ while running:
         photos[lastDownload].bind("<Button-1>", settings_open)
         photos[lastDownload].pack(expand=True)
 
+        if previousPhoto in photos:
+            #Removing the photo from the screen and dictionary
+            photos[previousPhoto].destroy()
+            del photos[previousPhoto]
+
         ChangePhoto = False
 
     ###Loading Next Image
@@ -153,12 +159,9 @@ while running:
         #Checking if the last image update was more than 15 seconds ago
         if time.time() - lastDownload > float(settings['delay']):
             #Checking to see if the previous image is in the dictionary
-            if lastDownload in photos:
-                #Removing the photo from the screen and dictionary
-                photos[lastDownload].destroy()
-                del photos[lastDownload]
 
             #setting the timestamp for the last loaded image
+            previousPhoto = lastDownload
             lastDownload = time.time()
 
 
