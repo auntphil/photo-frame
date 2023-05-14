@@ -1,4 +1,5 @@
 <?php
+	header('Access-Control-Allow-Origin: *'); 
 	//Pulling Settings
     $rawSettings = file_get_contents("settings.json");
     $settings = json_decode($rawSettings, true);
@@ -27,7 +28,23 @@
 				$path = $settings['app']['photo_root'].$randomImg[1].'/'.$randomImg[0];
 				$background = new Imagick($path);
 				$foreground = new Imagick($path);
-				
+
+				//Getting Image Orientation
+				$exifArray = $foreground->getImageProperties("exif:Orientation");
+				foreach ($exifArray as $name => $property)
+				{
+					switch($property){
+						case 6:
+							$background->rotateimage("black",270);
+							$foreground->rotateimage("black",270);
+							break;
+						case 8:
+							$background->rotateimage("black",90);
+							$foreground->rotateimage("black",90);
+							break;
+					}
+				}
+
 				//Getting Image Size
 				$imageprops = $background->getImageGeometry();
 				$width = $imageprops['width'];
@@ -87,6 +104,20 @@
 				}
 
 				$background->compositeImage($foreground, \Imagick::COMPOSITE_ATOP, $TLx, 0);
+
+				foreach ($exifArray as $name => $property)
+				{
+					switch($property){
+						case 6:
+							$background->rotateimage("black",90);
+							$foreground->rotateimage("black",90);
+							break;
+						case 8:
+							$background->rotateimage("black",270);
+							$foreground->rotateimage("black",270);
+							break;
+					}
+				}
 
 				header('Content-type: image/jpg');  
 				echo $background;
