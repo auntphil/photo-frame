@@ -119,6 +119,24 @@
 					}
 				}
 
+				$transparentPixel = new ImagickPixel("rgba(0,0,0,0)");
+				$transparentImage = new Imagick();
+				$transparentImage->newImage($frameWidth,$frameHeight,$transparentPixel);
+
+				$draw = new ImagickDraw();
+				$draw->setFillColor('black');
+				$draw->setFont('PermanentMarker-Regular.ttf');
+				$draw->setFontSize(45);
+				$draw->setGravity(Imagick::GRAVITY_SOUTHEAST);
+				$draw->setStrokeColor('white');
+				$draw->setStrokeWidth(1);
+
+				$transparentImage->annotateImage($draw, 250, 60, -15, explode("-",$randomImg[0])[0]);
+				$transparentImage->setImageFormat('jpg');
+				
+				$background->compositeImage($transparentImage, \Imagick::COMPOSITE_ATOP, 0, 0);
+				
+				$background->setImageFormat('jpg');
 				header('Content-type: image/jpg');  
 				echo $background;
 			}
