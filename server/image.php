@@ -8,6 +8,42 @@
     $frame = $_GET['frame'];
 	$frameHeight = $_GET['height'];
 	$frameWidth = $_GET['width'];
+
+	//Fixed Orientation of Photo
+	function autorotate(Imagick $image)
+	{
+		switch ($image->getImageOrientation()) {
+		case Imagick::ORIENTATION_TOPLEFT:
+			break;
+		case Imagick::ORIENTATION_TOPRIGHT:
+			$image->flopImage();
+			break;
+		case Imagick::ORIENTATION_BOTTOMRIGHT:
+			$image->rotateImage("#000", 180);
+			break;
+		case Imagick::ORIENTATION_BOTTOMLEFT:
+			$image->flopImage();
+			$image->rotateImage("#000", 180);
+			break;
+		case Imagick::ORIENTATION_LEFTTOP:
+			$image->flopImage();
+			$image->rotateImage("#000", -90);
+			break;
+		case Imagick::ORIENTATION_RIGHTTOP:
+			$image->rotateImage("#000", 90);
+			break;
+		case Imagick::ORIENTATION_RIGHTBOTTOM:
+			$image->flopImage();
+			$image->rotateImage("#000", 90);
+			break;
+		case Imagick::ORIENTATION_LEFTBOTTOM:
+			$image->rotateImage("#000", -90);
+			break;
+		default: // Invalid orientation
+			break;
+		}
+		$image->setImageOrientation(Imagick::ORIENTATION_TOPLEFT);
+	}
    
     //Checking if Frame is known
     if(array_key_exists($frame, $settings['frames'])){
@@ -29,21 +65,8 @@
 				$background = new Imagick($path);
 				$foreground = new Imagick($path);
 
-				//Getting Image Orientation
-				$exifArray = $foreground->getImageProperties("exif:Orientation");
-				foreach ($exifArray as $name => $property)
-				{
-					switch($property){
-						case 6:
-							$background->rotateimage("black",270);
-							$foreground->rotateimage("black",270);
-							break;
-						case 8:
-							$background->rotateimage("black",90);
-							$foreground->rotateimage("black",90);
-							break;
-					}
-				}
+				autorotate($background);
+				autorotate($foreground);
 
 				//Getting Image Size
 				$imageprops = $background->getImageGeometry();
@@ -103,26 +126,7 @@
 					$TLx = 0;
 				}
 
-				$background->compositeImage($foreground, \Imagick::COMPOSITE_ATOP, $TLx, 0);
-
-				foreach ($exifArray as $name => $property)
-				{
-					switch($property){
-						case 6:
-							$background->rotateimage("black",90);
-							$foreground->rotateimage("black",90);
-							break;
-						case 8:
-							$background->rotateimage("black",270);
-							$foreground->rotateimage("black",270);
-							break;
-					}
-				}
-
-				$transparentPixel = new ImagickPixel("rgba(0,0,0,0)");
-				$transparentImage = new Imagick();
-				$transparentImage->newImage($frameWidth,$frameHeight,$transparentPixel);
-
+				//Creating Font
 				$draw = new ImagickDraw();
 				$draw->setFillColor('black');
 				$draw->setFont('PermanentMarker-Regular.ttf');
@@ -130,12 +134,14 @@
 				$draw->setGravity(Imagick::GRAVITY_SOUTHEAST);
 				$draw->setStrokeColor('white');
 				$draw->setStrokeWidth(1);
+				
+				//Placing year onto photo
+				$foreground->annotateImage($draw, 50, 50, -15, explode("/",$randomImg[1])[1]);
+				$foreground->setImageFormat('jpg');
 
-				$transparentImage->annotateImage($draw, 250, 60, -15, explode("-",$randomImg[0])[0]);
-				$transparentImage->setImageFormat('jpg');
-				
-				$background->compositeImage($transparentImage, \Imagick::COMPOSITE_ATOP, 0, 0);
-				
+				//Combining Foreground and Background
+				$background->compositeImage($foreground, \Imagick::COMPOSITE_ATOP, $TLx, 0);
+			
 				$background->setImageFormat('jpg');
 				header('Content-type: image/jpg');  
 				echo $background;
