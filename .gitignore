@@ -3,3 +3,11 @@ server/settings.php
 photo frame/image.jpg
 photo frame/settings.json
 server/settings.json
+server-frontend/.vscode/
+server-scanner/.vscode/
+frontend/next.jpg
+server-frontend/images.db
+server-frontend/settings.json
+server-scanner/settings.json
+frontend/settings.json
+frontend/.vscode/

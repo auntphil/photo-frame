@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thumbnail Gallery</title>
+    <style>
+        .thumbnail {
+            display: inline-block;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Thumbnail Gallery</h1>
+    <div>
+        {% for image in images %}
+            <div class="thumbnail">
+                <a href="{{ url_for('thumbnails', filename=image[1]) }}">
+                    <img src="{{ url_for('thumbnails', filename=image[1]) }}" alt="{{ image[0] }}" width="100">
+                </a>
+                <p>{{ image[1] }}</p>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

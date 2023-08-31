@@ -1,73 +1,74 @@
 <?php
+	ini_set('display_errors', 1);
+	ini_set('display_startup_errors', 1);
+	error_reporting(E_ALL);
+
 	header('Access-Control-Allow-Origin: *'); 
 	//Pulling Settings
     $rawSettings = file_get_contents("settings.json");
     $settings = json_decode($rawSettings, true);
     //Checking if Frame is set
-    if(!isset($_GET['frame']) || !isset($_GET['height']) || !isset($_GET['width'])){exit();}
+    if(!isset($_GET['frame'])){exit();}
     $frame = $_GET['frame'];
-	$frameHeight = $_GET['height'];
-	$frameWidth = $_GET['width'];
-
+	$frameHeight = $settings['frames'][$frame]['height'];
+	$frameWidth = $settings['frames'][$frame]['width'];
+	
 	//Fixed Orientation of Photo
 	function autorotate(Imagick $image)
 	{
 		switch ($image->getImageOrientation()) {
-		case Imagick::ORIENTATION_TOPLEFT:
-			break;
-		case Imagick::ORIENTATION_TOPRIGHT:
-			$image->flopImage();
-			break;
-		case Imagick::ORIENTATION_BOTTOMRIGHT:
-			$image->rotateImage("#000", 180);
-			break;
-		case Imagick::ORIENTATION_BOTTOMLEFT:
-			$image->flopImage();
-			$image->rotateImage("#000", 180);
-			break;
-		case Imagick::ORIENTATION_LEFTTOP:
-			$image->flopImage();
-			$image->rotateImage("#000", -90);
-			break;
-		case Imagick::ORIENTATION_RIGHTTOP:
-			$image->rotateImage("#000", 90);
-			break;
-		case Imagick::ORIENTATION_RIGHTBOTTOM:
-			$image->flopImage();
-			$image->rotateImage("#000", 90);
-			break;
-		case Imagick::ORIENTATION_LEFTBOTTOM:
-			$image->rotateImage("#000", -90);
-			break;
-		default: // Invalid orientation
-			break;
-		}
+			case Imagick::ORIENTATION_TOPLEFT:
+				break;
+			case Imagick::ORIENTATION_TOPRIGHT:
+				$image->flopImage();
+				break;
+			case Imagick::ORIENTATION_BOTTOMRIGHT:
+				$image->rotateImage("#000", 180);
+				break;
+			case Imagick::ORIENTATION_BOTTOMLEFT:
+				$image->flopImage();
+				$image->rotateImage("#000", 180);
+				break;
+			case Imagick::ORIENTATION_LEFTTOP:
+				$image->flopImage();
+				$image->rotateImage("#000", -90);
+				break;
+			case Imagick::ORIENTATION_RIGHTTOP:
+				$image->rotateImage("#000", 90);
+				break;
+			case Imagick::ORIENTATION_RIGHTBOTTOM:
+				$image->flopImage();
+				$image->rotateImage("#000", 90);
+				break;
+			case Imagick::ORIENTATION_LEFTBOTTOM:
+				$image->rotateImage("#000", -90);
+				break;
+				default: // Invalid orientation
+				break;
+			}
 		$image->setImageOrientation(Imagick::ORIENTATION_TOPLEFT);
 	}
-   
+	
     //Checking if Frame is known
     if(array_key_exists($frame, $settings['frames'])){
-        try {
-			$conn = "pgsql:host=".$settings['db']['host'].";port=".$settings['db']['port'].";dbname=".$settings['db']['db'].";";
-			// make a database connection
-			$pdo = new PDO($conn, $settings['db']['username'], $settings['db']['password'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-		
-			if ($pdo) {
+		try {
+			$db = new SQLite3('/var/piframe/images.db');
+			$image = null;
+			$results = $db->query("SELECT path, year FROM pictures WHERE month = '{$settings['frames'][$frame]['album']}' ORDER BY RANDOM() LIMIT 1;");
+			while ($row = $results->fetchArray()) {
+				$image = $row;
+			}
+			if ($image) {
 				$newPhoto = True;
-				while ($newPhoto) {
-					$imgInfo = $pdo->query("select unit.filename, folder.name from unit inner join many_item_has_many_normal_album on many_item_has_many_normal_album.id_item = unit.id_item inner join folder on unit.id_folder = folder.id where many_item_has_many_normal_album.id_normal_album = ". $settings['frames'][$frame]['album'])->fetchAll();
-					$randomImg = $imgInfo[rand(0,(count($imgInfo)-1))];
-					if( !str_ends_with(strtolower($randomImg[0]), 'mp4') ){
-						$newPhoto = False;
-					}
-				}
-				$path = $settings['app']['photo_root'].$randomImg[1].'/'.$randomImg[0];
+				
+								
+				$path = $image['path'];
 				$background = new Imagick($path);
 				$foreground = new Imagick($path);
-
+				
 				autorotate($background);
 				autorotate($foreground);
-
+				
 				//Getting Image Size
 				$imageprops = $background->getImageGeometry();
 				$width = $imageprops['width'];
@@ -136,22 +137,21 @@
 				$draw->setStrokeWidth(1);
 				
 				//Placing year onto photo
-				$foreground->annotateImage($draw, 50, 50, -15, explode("/",$randomImg[1])[1]);
+				$foreground->annotateImage($draw, 50, 50, -15, $image['year']);
 				$foreground->setImageFormat('jpg');
 
 				//Combining Foreground and Background
 				$background->compositeImage($foreground, \Imagick::COMPOSITE_ATOP, $TLx, 0);
 			
 				$background->setImageFormat('jpg');
+				ob_get_clean();
 				header('Content-type: image/jpg');  
 				echo $background;
 			}
-		} catch (PDOException $e) {
+		} catch (Exception $e) {
 			die($e->getMessage());
 		} finally {
-			if ($pdo) {
-				$pdo = null;
-			}
+			
 		}
     }
 ?>

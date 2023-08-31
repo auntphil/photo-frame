@@ -1,0 +1,12 @@
+{
+	"app":{
+		"photo_root": ""
+	},
+	"frames":{
+		"#FRAME ID#":{
+			"album": "08",
+			"height": "768",
+			"width": "1366"
+		}
+	}
+}

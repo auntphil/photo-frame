@@ -168,7 +168,7 @@ while running:
             #Downloading the new image
             try:
                 with open('image.jpg', 'wb') as handle:
-                    response = requests.get("http://{}/image.php?frame={}&height={}&width={}".format(settings["burl"],settings["pfid"],h,w), stream=True)
+                    response = requests.get("http://{}/image.php?frame={}".format(settings["burl"],settings["pfid"]), stream=True)
                     if not response.ok:
                         print(response)
                 
