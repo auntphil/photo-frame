@@ -1,4 +1,4 @@
-import os
+import os, sys
 import sqlite3, json, time
 from datetime import datetime
 from PIL import Image
@@ -10,6 +10,10 @@ if os.path.isfile("settings.json"):
         settings = json.load(openfile)
 else:
     settings = {}
+if len(sys.argv) > 1:
+    scan_type = sys.argv[1]
+else:
+    scan_type = "normal"
 
 # Replace these with your actual paths
 max_size = 200  # Set your desired max size here
@@ -77,7 +81,16 @@ def scan_folder(folder_path):
     conn = sqlite3.connect(settings["db_path"])
     cursor = conn.cursor()
 
-    for root, _, files in os.walk(folder_path):
+    for root, dirs, files in os.walk(folder_path):
+        if not any(os.path.isdir(os.path.join(root, dir)) for dir in dirs):
+            modified_time = os.path.getmtime(root)
+            current_time = datetime.now().timestamp()
+            twenty_four_hours_ago = current_time - (24 * 60 * 60)
+
+            if modified_time < twenty_four_hours_ago and scan_type != 'all' :
+                print(f"Skipping folder '{root}' due to old modification time.")
+                continue
+
         for file in files:
             file_path = os.path.join(root, file)
             extension = os.path.splitext(file)[1].lower()
