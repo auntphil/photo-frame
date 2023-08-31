@@ -1,1 +1,0 @@
-SQLSTATE[08006] [7] FATAL:  no pg_hba.conf entry for host "127.0.0.1", user "postgres", database "synofoto"
