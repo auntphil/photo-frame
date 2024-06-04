@@ -11,3 +11,8 @@ server-frontend/settings.json
 server-scanner/settings.json
 frontend/settings.json
 frontend/.vscode/
+server/.env
+server/build.sh
+server/piframe_server.tar
+server/db.log
+frontend/image.jpg
