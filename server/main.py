@@ -4,6 +4,7 @@ import psycopg2
 import sys
 from io import BytesIO
 from dotenv import load_dotenv
+import datetime
 
 # Set up error handling and enable CORS
 from flask import Flask, send_file
@@ -50,6 +51,11 @@ if "AM_I_IN_A_DOCKER_CONTAINER" in os.environ:
 else:
     container = False
 
+if "LOGGING" in os.environ:
+    logging = int(os.environ['LOGGING'])
+else: 
+    logging = 3
+
 if "FRAME_PATH" in os.environ:
     photoPath = os.environ['FRAME_PATH']
 
@@ -62,6 +68,34 @@ if "FRAME_HEIGHT" in os.environ:
     frameHeight = int(os.environ['FRAME_HEIGHT'])
 else:
     frameHeight = 768
+
+def logger(level, message):
+    #Get Date
+    current_time = datetime.datetime.now()
+    formatted_time = current_time.strftime('%Y-%m-%d %H:%M:%S.%f')
+    message = f"{formatted_time} - {message}\n"
+    #Debug
+    if logging == 7:
+        if container:
+            log = open("/logs/debug.log","a")
+        else:
+            log = open("debug.log","a")
+        log.write(message)
+    #Warning
+    if logging >= level and level == 4:
+        if container:
+            log = open("/logs/warning.log","a")
+        else:
+            log = open("warning.log","a")
+        log.write(message)
+    #Error
+    if logging >= level and level == 3:
+        if container:
+            log = open("/logs/error.log","a")
+        else:
+            log = open("error.log","a")
+        log.write(message)
+        log.close()
 
 # Function to correct image orientation
 def autorotate(image):
@@ -104,12 +138,7 @@ def generate_image():
 
             if row:
                 #Write found asset to log
-                if container:
-                    f = open("/logs/db.log","a")
-                else:
-                    f = open("db.log","a")
-                f.write(f"Found assetId: {row[4]} - {row[0]}\n")
-                f.close()
+                logger(7, f"Found assetId: {row[4]} - {row[0]}")
 
                 year = int(row[2])
                 path = row[3].replace("upload/","")
@@ -183,12 +212,15 @@ def generate_image():
                     #TODO Set all shown Images to null
                     attempt+=1
                 else:
+                    logger(4, "WARNING: No Image Found")
                     return "No image found", 404
         
     except Exception as e:
         exception_type, exception_object, exception_traceback = sys.exc_info()
         line_number = exception_traceback.tb_lineno
-        print(f"Error on line {str(line_number)}: {str(e)}")
+
+        logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
+
         return str(e), 500       
 
     finally:
