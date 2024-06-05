@@ -16,3 +16,4 @@ server/build.sh
 server/piframe_server.tar
 server/db.log
 frontend/image.jpg
+server/debug.log

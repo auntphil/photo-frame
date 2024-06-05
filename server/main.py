@@ -138,7 +138,7 @@ def generate_image():
 
             if row:
                 #Write found asset to log
-                logger(7, f"Found assetId: {row[4]} - {row[0]}")
+                logger(7, f"DEBUG: Found assetId {row[0]}")
 
                 year = int(row[2])
                 path = row[3].replace("upload/","")
