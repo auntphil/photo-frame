@@ -1,5 +1,5 @@
 import os
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageFile
 import psycopg2
 import sys
 from io import BytesIO
@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 
 # Set up error handling and enable CORS
 from flask import Flask, send_file
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Disable caching
