@@ -17,3 +17,5 @@ server/piframe_server.tar
 server/db.log
 frontend/image.jpg
 server/debug.log
+server/error.log
+server/viewed.log

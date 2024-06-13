@@ -69,6 +69,29 @@ if "FRAME_HEIGHT" in os.environ:
 else:
     frameHeight = 768
 
+def saveViewed(id):
+    if container:
+        file = open("/config/viewed.log","a")
+    else:
+        file = open("viewed.log","a")
+    file.write(f"{id}\n")
+    file.close()
+
+def readViewed():
+    try:
+        if container:
+            file = open("/config/viewed.log")
+        else:
+            file = open("viewed.log")
+        viewed = file.read().splitlines()
+        file.close()
+    except Exception as e:
+        logger(3, f"readViewed: {e}")
+        viewed = []
+    return viewed
+
+
+
 def logger(level, message):
     #Get Date
     current_time = datetime.datetime.now()
@@ -128,11 +151,15 @@ def generate_image():
             database=database
         )
         cursor = conn.cursor()
-        attempt = 1
+        firstAttempt = True
+        viewed = readViewed()
 
         while True:
+            #Generate a searchable string for Database query
+            viewedStr = "'" + "', '".join(viewed) + "'"
+            print(viewedStr)
             # Execute the SQL query to retrieve a random image path and year
-            cursor.execute("SELECT exif.\"assetId\", DATE_PART('month', exif.\"dateTimeOriginal\"::DATE), DATE_PART('year', exif.\"dateTimeOriginal\"::DATE), assets.\"originalPath\", assets.\"type\" FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE'  AND assets.\"isArchived\" = FALSE AND assets.\"deletedAt\" IS NULL ORDER BY RANDOM() LIMIT 1")
+            cursor.execute(f"SELECT exif.\"assetId\", DATE_PART('month', exif.\"dateTimeOriginal\"::DATE), DATE_PART('year', exif.\"dateTimeOriginal\"::DATE), assets.\"originalPath\", assets.\"type\" FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE'  AND assets.\"isArchived\" = FALSE AND assets.\"deletedAt\" IS NULL AND assets.\"id\"::text NOT IN ({viewedStr})  ORDER BY RANDOM() LIMIT 1")
             row = cursor.fetchone()
 
 
@@ -140,6 +167,7 @@ def generate_image():
                 #Write found asset to log
                 logger(7, f"DEBUG: Found assetId {row[0]}")
 
+                id = row[0]
                 year = int(row[2])
                 path = row[3].replace("upload/","")
 
@@ -196,7 +224,9 @@ def generate_image():
                 Image.Image.paste(background, foreground, (tl_x, 0))
         
                 #Mark Image as Shown
-                #TODO Mark Image as Shown
+                viewed.append(id)
+                saveViewed(id)
+                print(len(viewed))
 
                 # Create a BytesIO object to store the image
                 img_io = BytesIO()
@@ -205,12 +235,25 @@ def generate_image():
                 background.save(img_io, format="JPEG")
                 img_io.seek(0)
 
+                #Resetting tracker
+                firstAttempt = True
+
                 # Return the image as a response
                 return send_file(img_io, mimetype='image/jpeg')
             else:
-                if attempt == 1:
-                    #TODO Set all shown Images to null
-                    attempt+=1
+                if firstAttempt:
+                    logger(7,"Clearing Viewed List")
+
+                    #Clear list
+                    viewed.clear()
+
+                    #Removed Viewed Log
+                    if container:
+                        os.remove("/config/viewed.log")
+                    else:
+                        os.remove("viewed.log")
+
+                    firstAttempt = False
                 else:
                     logger(4, "WARNING: No Image Found")
                     return "No image found", 404
