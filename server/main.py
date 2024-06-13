@@ -132,7 +132,7 @@ def generate_image():
 
         while True:
             # Execute the SQL query to retrieve a random image path and year
-            cursor.execute("SELECT exif.\"assetId\", DATE_PART('month', exif.\"dateTimeOriginal\"::DATE), DATE_PART('year', exif.\"dateTimeOriginal\"::DATE), assets.\"originalPath\", assets.\"type\" FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE' ORDER BY RANDOM() LIMIT 1")
+            cursor.execute("SELECT exif.\"assetId\", DATE_PART('month', exif.\"dateTimeOriginal\"::DATE), DATE_PART('year', exif.\"dateTimeOriginal\"::DATE), assets.\"originalPath\", assets.\"type\" FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE'  AND assets.\"isArchived\" = FALSE AND assets.\"deletedAt\" IS NULL ORDER BY RANDOM() LIMIT 1")
             row = cursor.fetchone()
 
 
