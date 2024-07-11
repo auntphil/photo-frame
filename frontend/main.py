@@ -39,7 +39,12 @@ title_server = tk.Label(master=frame_settings,  text="Base URL")
 frame_picture = tk.Frame(bg="black")
 frame_picture.pack(fill="both", expand=True)
 
+#Setting Error State
+error = False
+
 while True:
+
+    #TODO Check if piframe is within a time window to run
 
     #Display Image
     try:
@@ -64,8 +69,6 @@ while True:
         photos[previousPhoto].destroy()
         del photos[previousPhoto]
 
-    ChangePhoto = False
-
     ###Loading Next Image
     #Checking if the last image update was more than 15 seconds ago
     #Checking to see if the previous image is in the dictionary
@@ -79,20 +82,29 @@ while True:
 
     #Downloading the new image
     try:
-        with open('image.jpg', 'wb') as handle:
+        with open('temp.jpg', 'wb') as handle:
             response = requests.get("http://{}/generate_image".format(settings["server"]), stream=True)
             if not response.ok:
                 print(response)
+                error = True
+            else:
+                error = False
         
             for block in response.iter_content(1024):
                 if not block:
                     break
         
                 handle.write(block)
-        ChangePhoto = True
-    except:
-        print('Error')
-            
 
-    while time.time() - lastDownload < float(settings['delay']):
-        continue
+        #If Not Error Update Image File
+        if not error:
+            os.remove('image.jpg')
+            os.rename('temp.jpg','image.jpg')
+    except Exception as e:
+        print(e)
+        error = True
+            
+    #Skip Time Delay if Error
+    if not error:
+        while time.time() - lastDownload < float(settings['delay']):
+            continue

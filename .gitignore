@@ -19,3 +19,5 @@ frontend/image.jpg
 server/debug.log
 server/error.log
 server/viewed.log
+frontend/error.log
+frontend/temp.jpg
