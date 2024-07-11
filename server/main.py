@@ -159,7 +159,6 @@ def generate_image():
         while True:
             #Generate a searchable string for Database query
             viewedStr = "'" + "', '".join(viewed) + "'"
-            print(viewedStr)
             # Execute the SQL query to retrieve a random image path and year
             cursor.execute(f"SELECT exif.\"assetId\", DATE_PART('month', exif.\"dateTimeOriginal\"::DATE), DATE_PART('year', exif.\"dateTimeOriginal\"::DATE), assets.\"originalPath\", assets.\"type\" FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE'  AND assets.\"isArchived\" = FALSE AND assets.\"deletedAt\" IS NULL AND assets.\"id\"::text NOT IN ({viewedStr})  ORDER BY RANDOM() LIMIT 1")
             row = cursor.fetchone()
@@ -228,7 +227,6 @@ def generate_image():
                 #Mark Image as Shown
                 viewed.append(id)
                 saveViewed(id)
-                print(len(viewed))
 
                 # Create a BytesIO object to store the image
                 img_io = BytesIO()
