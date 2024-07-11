@@ -1,5 +1,6 @@
 import os
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageFile
+from pillow_heif import register_heif_opener
 import psycopg2
 import sys
 from io import BytesIO
@@ -9,6 +10,7 @@ import datetime
 # Set up error handling and enable CORS
 from flask import Flask, send_file
 
+register_heif_opener()
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 app = Flask(__name__)
