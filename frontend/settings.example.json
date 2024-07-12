@@ -1,5 +1,6 @@
 {
-    "pfid": "",
-    "burl": "",
-    "delay": "15"
+    "server": "localhost:80",
+    "fullscreen": "True",
+    "delay": 15,
+    "log_level": 7
 }
