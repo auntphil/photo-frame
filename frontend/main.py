@@ -127,7 +127,8 @@ while True:
 
             #If Not Error Update Image File
             if not error:
-                os.remove('image.jpg')
+                if os.path.isfile('image.jpg'):
+                    os.remove('image.jpg')
                 os.rename('temp.jpg','image.jpg')
         except Exception as e:
             logger(3, e)
