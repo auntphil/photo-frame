@@ -160,7 +160,7 @@ def generate_image():
             #Generate a searchable string for Database query
             viewedStr = "'" + "', '".join(viewed) + "'"
             # Execute the SQL query to retrieve a random image path and year
-            cursor.execute(f"SELECT exif.\"assetId\", DATE_PART('month', exif.\"dateTimeOriginal\"::DATE), DATE_PART('year', exif.\"dateTimeOriginal\"::DATE), assets.\"originalPath\", assets.\"type\" FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE'  AND assets.\"isArchived\" = FALSE AND assets.\"deletedAt\" IS NULL AND assets.\"id\"::text NOT IN ({viewedStr})  ORDER BY RANDOM() LIMIT 1")
+            cursor.execute(f"SELECT exif.\"assetId\", DATE_PART('month', exif.\"dateTimeOriginal\"::DATE), DATE_PART('year', exif.\"dateTimeOriginal\"::DATE), assets.\"originalPath\", assets.\"type\" FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE'  AND assets.\"isArchived\" = FALSE AND assets.\"deletedAt\" IS NULL AND assets.\"id\"::text NOT IN ({viewedStr}) AND assets.\"originalPath\" NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1")
             row = cursor.fetchone()
 
 
