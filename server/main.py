@@ -1,4 +1,4 @@
-import os
+import os, json, time
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageFile
 from pillow_heif import register_heif_opener
 import psycopg2
@@ -143,6 +143,21 @@ def autorotate(image):
 @app.route('/generate_image', methods=['GET'])
 def generate_image():
     global whereStatement, frameHeight, frameWidth, photoPath
+
+    #Getting Settings
+    if container:
+        settingsPath = open("/config/settings.json","r")
+    else:
+        settingsPath = open("settings.json","r")
+
+    try:
+        settings = json.load(settingsPath)
+    except Exception as e:
+        logger(3, "Error: Error loading settings")
+        logger(3, e)
+        return str(e), 500
+
+
     try:
         # Connect to the Postgres database
         conn = psycopg2.connect(
@@ -160,7 +175,20 @@ def generate_image():
             #Generate a searchable string for Database query
             viewedStr = "'" + "', '".join(viewed) + "'"
             # Execute the SQL query to retrieve a random image path and year
-            cursor.execute(f"SELECT exif.\"assetId\", DATE_PART('month', exif.\"dateTimeOriginal\"::DATE), DATE_PART('year', exif.\"dateTimeOriginal\"::DATE), assets.\"originalPath\", assets.\"type\" FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE'  AND assets.\"isArchived\" = FALSE AND assets.\"deletedAt\" IS NULL AND assets.\"id\"::text NOT IN ({viewedStr}) AND assets.\"originalPath\" NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1")
+
+            querySelect = "SELECT exif.\"assetId\", DATE_PART('month', exif.\"dateTimeOriginal\"::DATE), DATE_PART('year', exif.\"dateTimeOriginal\"::DATE), assets.\"originalPath\", assets.\"type\""
+
+            match settings['mode']:
+                case 'monthly':
+                    queryFrom = f"FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE'  AND assets.\"isArchived\" = FALSE AND assets.\"deletedAt\" IS NULL AND assets.\"id\"::text NOT IN ({viewedStr}) AND assets.\"originalPath\" NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
+                case 'album':
+                    queryFrom = f"FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" JOIN albums_assets_assets ON assets.id = albums_assets_assets.\"assetsId\" WHERE albums_assets_assets.\"albumsId\" = '{settings['albumId']}' AND assets.\"type\" = 'IMAGE' AND assets.\"isArchived\" = FALSE AND assets.\"deletedAt\" IS NULL AND assets.\"originalPath\"NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
+                case _:
+                    logger(3, "Error: Incorrect or Missing Mode.")
+                    time.sleep(15)
+                    continue
+
+            cursor.execute(f"{querySelect} {queryFrom}")
             row = cursor.fetchone()
 
 

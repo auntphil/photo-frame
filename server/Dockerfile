@@ -3,5 +3,5 @@ RUN mkdir -p /config
 COPY main.py main.py
 COPY PermanentMarker-Regular.ttf PermanentMarker-Regular.ttf
 ENV AM_I_IN_A_DOCKER_CONTAINER Yes
-RUN pip install psycopg2 Pillow flask python-dotenv datetime pillow-heif
+RUN pip install psycopg2 Pillow flask python-dotenv datetime pillow-heif, time, json
 CMD ["python", "./main.py"]
