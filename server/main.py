@@ -1,4 +1,4 @@
-import os, json, time
+import os, json
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageFile
 from pillow_heif import register_heif_opener
 import psycopg2
@@ -171,35 +171,49 @@ def generate_image():
         firstAttempt = True
         viewed = readViewed()
 
-        while True:
-            #Generate a searchable string for Database query
-            viewedStr = "'" + "', '".join(viewed) + "'"
-            # Execute the SQL query to retrieve a random image path and year
+    except Exception as e:
+        exception_type, exception_object, exception_traceback = sys.exc_info()
+        line_number = exception_traceback.tb_lineno
+        logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
+        conn.close()
+        return str(e), 500
+    
+    while True:
+        #Generate a searchable string for Database query
+        viewedStr = "'" + "', '".join(viewed) + "'"
+        # Execute the SQL query to retrieve a random image path and year
 
-            querySelect = "SELECT exif.\"assetId\", DATE_PART('month', exif.\"dateTimeOriginal\"::DATE), DATE_PART('year', exif.\"dateTimeOriginal\"::DATE), assets.\"originalPath\", assets.\"type\""
+        querySelect = "SELECT exif.\"assetId\", DATE_PART('month', exif.\"dateTimeOriginal\"::DATE), DATE_PART('year', exif.\"dateTimeOriginal\"::DATE), assets.\"originalPath\", assets.\"type\""
 
-            match settings['mode']:
-                case 'monthly':
-                    queryFrom = f"FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE'  AND assets.\"isArchived\" = FALSE AND assets.\"deletedAt\" IS NULL AND assets.\"id\"::text NOT IN ({viewedStr}) AND assets.\"originalPath\" NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
-                case 'album':
-                    queryFrom = f"FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" JOIN albums_assets_assets ON assets.id = albums_assets_assets.\"assetsId\" WHERE albums_assets_assets.\"albumsId\" = '{settings['albumId']}' AND assets.\"type\" = 'IMAGE' AND assets.\"isArchived\" = FALSE AND assets.\"deletedAt\" IS NULL AND assets.\"originalPath\"NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
-                case _:
-                    logger(3, "Error: Incorrect or Missing Mode.")
-                    time.sleep(15)
-                    continue
+        match settings['mode']:
+            case 'monthly':
+                queryFrom = f"FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE'  AND assets.\"isArchived\" = FALSE AND assets.\"deletedAt\" IS NULL AND assets.\"id\"::text NOT IN ({viewedStr}) AND assets.\"originalPath\" NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
+            case 'album':
+                queryFrom = f"FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" JOIN albums_assets_assets ON assets.id = albums_assets_assets.\"assetsId\" WHERE albums_assets_assets.\"albumsId\" = '{settings['albumId']}' AND assets.\"type\" = 'IMAGE' AND assets.\"isArchived\" = FALSE AND assets.\"deletedAt\" IS NULL AND assets.\"originalPath\"NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
+            case _:
+                logger(3, "Error: Incorrect or Missing Mode.")
+                return str(e), 500   
 
+        try:
             cursor.execute(f"{querySelect} {queryFrom}")
             row = cursor.fetchone()
+        except Exception as e:
+            exception_type, exception_object, exception_traceback = sys.exc_info()
+            line_number = exception_traceback.tb_lineno
+            logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
+            return str(e), 500  
+        finally:
+            conn.close()     
 
+        if row:
+            #Write found asset to log
+            logger(7, f"DEBUG: Found assetId {row[0]}")
 
-            if row:
-                #Write found asset to log
-                logger(7, f"DEBUG: Found assetId {row[0]}")
+            id = row[0]
+            year = int(row[2])
+            path = row[3].replace("upload/","")
 
-                id = row[0]
-                year = int(row[2])
-                path = row[3].replace("upload/","")
-
+            try:
                 # Open the image and correct orientation
                 foreground = autorotate(Image.open(photoPath+path))
                 background = autorotate(Image.open(photoPath+path))
@@ -251,52 +265,52 @@ def generate_image():
                 draw.text((25, resize_height - 60), str(year), fill="black", font=font, stroke_width = 2, stroke_fill=(255,255,255))
 
                 Image.Image.paste(background, foreground, (tl_x, 0))
-        
-                #Mark Image as Shown
-                viewed.append(id)
+            except Exception as e:
+                exception_type, exception_object, exception_traceback = sys.exc_info()
+                line_number = exception_traceback.tb_lineno
+                logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
                 saveViewed(id)
+                return str(e), 500       
+    
+            #Mark Image as Shown
+            saveViewed(id)
 
-                # Create a BytesIO object to store the image
-                img_io = BytesIO()
+            # Create a BytesIO object to store the image
+            img_io = BytesIO()
 
+            try:
                 # Save the composite image to the BytesIO object
                 background.save(img_io, format="JPEG")
                 img_io.seek(0)
+            except Exception as e:
+                exception_type, exception_object, exception_traceback = sys.exc_info()
+                line_number = exception_traceback.tb_lineno
+                logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
+                saveViewed(id)
+                return str(e), 500       
 
-                #Resetting tracker
-                firstAttempt = True
+            #Resetting tracker
+            firstAttempt = True
 
-                # Return the image as a response
-                return send_file(img_io, mimetype='image/jpeg')
-            else:
-                if firstAttempt:
-                    logger(7,"Clearing Viewed List")
+            # Return the image as a response
+            return send_file(img_io, mimetype='image/jpeg')
+        else:
+            if firstAttempt:
+                logger(7,"Clearing Viewed List")
 
-                    #Clear list
-                    viewed.clear()
+                #Clear list
+                viewed.clear()
 
-                    #Removed Viewed Log
-                    if container:
-                        os.remove("/config/viewed.log")
-                    else:
-                        os.remove("viewed.log")
-
-                    firstAttempt = False
+                #Removed Viewed Log
+                if container:
+                    os.remove("/config/viewed.log")
                 else:
-                    logger(4, "WARNING: No Image Found")
-                    return "No image found", 404
-        
-    except Exception as e:
-        exception_type, exception_object, exception_traceback = sys.exc_info()
-        line_number = exception_traceback.tb_lineno
+                    os.remove("viewed.log")
 
-        logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
-
-        return str(e), 500       
-
-    finally:
-        conn.close()
-
+                firstAttempt = False
+            else:
+                logger(4, "WARNING: No Image Found")
+                return "No image found", 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80)
