@@ -187,9 +187,9 @@ def generate_image():
 
         match settings['mode']:
             case 'monthly':
-                queryFrom = f"FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE'  AND assets.\"visiblity\" != 'archive' AND assets.\"deletedAt\" IS NULL AND assets.\"id\"::text NOT IN ({viewedStr}) AND assets.\"originalPath\" NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
+                queryFrom = f"FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE'  AND assets.\"visibility\" != 'archive' AND assets.\"deletedAt\" IS NULL AND assets.\"id\"::text NOT IN ({viewedStr}) AND assets.\"originalPath\" NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
             case 'album':
-                queryFrom = f"FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" JOIN albums_assets_assets ON assets.id = albums_assets_assets.\"assetsId\" WHERE albums_assets_assets.\"albumsId\" = '{settings['albumId']}' AND assets.\"type\" = 'IMAGE' AND assets.\"visiblity\" != 'archive' AND assets.\"deletedAt\" IS NULL AND assets.\"originalPath\"NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
+                queryFrom = f"FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" JOIN albums_assets_assets ON assets.id = albums_assets_assets.\"assetsId\" WHERE albums_assets_assets.\"albumsId\" = '{settings['albumId']}' AND assets.\"type\" = 'IMAGE' AND assets.\"visibility\" != 'archive' AND assets.\"deletedAt\" IS NULL AND assets.\"originalPath\"NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
             case _:
                 logger(3, "Error: Incorrect or Missing Mode.")
                 return str(e), 500   
