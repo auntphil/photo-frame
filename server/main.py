@@ -183,13 +183,13 @@ def generate_image():
         viewedStr = "'" + "', '".join(viewed) + "'"
         # Execute the SQL query to retrieve a random image path and year
 
-        querySelect = "SELECT exif.\"assetId\", DATE_PART('month', exif.\"dateTimeOriginal\"::DATE), DATE_PART('year', exif.\"dateTimeOriginal\"::DATE), assets.\"originalPath\", assets.\"type\""
+        querySelect = "SELECT asset_exif.\"assetId\", DATE_PART('month', asset_exif.\"dateTimeOriginal\"::DATE), DATE_PART('year', asset_exif.\"dateTimeOriginal\"::DATE), asset.\"originalPath\", asset.\"type\""
 
         match settings['mode']:
             case 'monthly':
-                queryFrom = f"FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" WHERE DATE_PART('month', exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND assets.\"type\" = 'IMAGE'  AND assets.\"visibility\" != 'archive' AND assets.\"deletedAt\" IS NULL AND assets.\"id\"::text NOT IN ({viewedStr}) AND assets.\"originalPath\" NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
+                queryFrom = f"FROM asset_exif JOIN asset ON asset.\"id\" = asset_exif.\"assetId\" WHERE DATE_PART('month', asset_exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND asset.\"type\" = 'IMAGE'  AND asset.\"visibility\" != 'archive' AND asset.\"deletedAt\" IS NULL AND asset.\"id\"::text NOT IN ({viewedStr}) AND asset.\"originalPath\" NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
             case 'album':
-                queryFrom = f"FROM exif JOIN assets ON assets.\"id\" = exif.\"assetId\" JOIN albums_assets_assets ON assets.id = albums_assets_assets.\"assetsId\" WHERE albums_assets_assets.\"albumsId\" = '{settings['albumId']}' AND assets.\"type\" = 'IMAGE' AND assets.\"visibility\" != 'archive' AND assets.\"deletedAt\" IS NULL AND assets.\"originalPath\"NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
+                queryFrom = f"FROM asset_exif JOIN asset ON asset.\"id\" = asset_exif.\"assetId\" JOIN album_asset ON asset.id = album_asset.\"assetsId\" WHERE album_asset.\"albumsId\" = '{settings['albumId']}' AND asset.\"type\" = 'IMAGE' AND asset.\"visibility\" != 'archive' AND asset.\"deletedAt\" IS NULL AND asset.\"originalPath\"NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
             case _:
                 logger(3, "Error: Incorrect or Missing Mode.")
                 return str(e), 500   
@@ -211,7 +211,7 @@ def generate_image():
 
             id = row[0]
             year = int(row[2])
-            path = row[3].replace("upload/","")
+            path = row[3].replace("/usr/src/app/upload","")
 
             try:
                 # Open the image and correct orientation
