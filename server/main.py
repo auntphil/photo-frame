@@ -187,9 +187,9 @@ def generate_image():
 
         match settings['mode']:
             case 'monthly':
-                queryFrom = f"FROM asset_exif JOIN asset ON asset.\"id\" = asset_exif.\"assetId\" WHERE DATE_PART('month', asset_exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND asset.\"type\" = 'IMAGE'  AND asset.\"visibility\" != 'archive' AND asset.\"deletedAt\" IS NULL AND asset.\"id\"::text NOT IN ({viewedStr}) AND asset.\"originalPath\" NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
+                queryFrom = f"FROM asset_exif JOIN asset ON asset.\"id\" = asset_exif.\"assetId\" WHERE DATE_PART('month', asset_exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND asset.\"type\" = 'IMAGE'  AND asset.\"visibility\" = 'timeline' AND asset.\"deletedAt\" IS NULL AND asset.\"id\"::text NOT IN ({viewedStr}) AND asset.\"originalPath\" NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
             case 'album':
-                queryFrom = f"FROM asset_exif JOIN asset ON asset.\"id\" = asset_exif.\"assetId\" JOIN album_asset ON asset.id = album_asset.\"assetsId\" WHERE album_asset.\"albumsId\" = '{settings['albumId']}' AND asset.\"type\" = 'IMAGE' AND asset.\"visibility\" != 'archive' AND asset.\"deletedAt\" IS NULL AND asset.\"originalPath\"NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
+                queryFrom = f"FROM asset_exif JOIN asset ON asset.\"id\" = asset_exif.\"assetId\" JOIN album_asset ON asset.id = album_asset.\"assetsId\" WHERE album_asset.\"albumsId\" = '{settings['albumId']}' AND asset.\"type\" = 'IMAGE' AND asset.\"visibility\" = 'timeline' AND asset.\"deletedAt\" IS NULL AND asset.\"originalPath\"NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
             case _:
                 logger(3, "Error: Incorrect or Missing Mode.")
                 return str(e), 500   
