@@ -218,6 +218,11 @@ def generate_image():
                 foreground = autorotate(Image.open(photoPath+path))
                 background = autorotate(Image.open(photoPath+path))
 
+                #Checking if the Image is RGBA
+                if foreground.mode == "RGBA":
+                    foreground = foreground.convert("RGB")
+                    background = background.convert("RGB")
+
                 # Get image size
                 width, height = background.size
 
@@ -286,8 +291,9 @@ def generate_image():
                 exception_type, exception_object, exception_traceback = sys.exc_info()
                 line_number = exception_traceback.tb_lineno
                 logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
+                logger(3, f"ERROR on line {str(id)}")
                 saveViewed(id)
-                return str(e), 500       
+                return str(e), 500
 
             #Resetting tracker
             firstAttempt = True
