@@ -88,7 +88,7 @@ def readViewed():
         viewed = file.read().splitlines()
         file.close()
     except Exception as e:
-        logger(3, f"readViewed: {e}")
+        logger(7, f"readViewed: {e}")
         viewed = []
     return viewed
 
@@ -155,30 +155,31 @@ def generate_image():
     except Exception as e:
         logger(3, "Error: Error loading settings")
         logger(3, e)
-        return str(e), 500
+        generate_image()
 
 
-    try:
-        # Connect to the Postgres database
-        conn = psycopg2.connect(
-            user=user,
-            password=password,
-            host=host,
-            port=port,
-            database=database
-        )
-        cursor = conn.cursor()
-        firstAttempt = True
-        viewed = readViewed()
-
-    except Exception as e:
-        exception_type, exception_object, exception_traceback = sys.exc_info()
-        line_number = exception_traceback.tb_lineno
-        logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
-        conn.close()
-        return str(e), 500
     
+    firstAttempt = True
     while True:
+        try:
+            # Connect to the Postgres database
+            conn = psycopg2.connect(
+                user=user,
+                password=password,
+                host=host,
+                port=port,
+                database=database
+            )
+            cursor = conn.cursor()
+            viewed = readViewed()
+
+        except Exception as e:
+            exception_type, exception_object, exception_traceback = sys.exc_info()
+            line_number = exception_traceback.tb_lineno
+            logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
+            conn.close()
+            generate_image()
+
         #Generate a searchable string for Database query
         viewedStr = "'" + "', '".join(viewed) + "'"
         # Execute the SQL query to retrieve a random image path and year
@@ -189,10 +190,10 @@ def generate_image():
             case 'monthly':
                 queryFrom = f"FROM asset_exif JOIN asset ON asset.\"id\" = asset_exif.\"assetId\" WHERE DATE_PART('month', asset_exif.\"dateTimeOriginal\"::DATE) = DATE_PART('month', current_date::DATE) AND asset.\"type\" = 'IMAGE'  AND asset.\"visibility\" = 'timeline' AND asset.\"deletedAt\" IS NULL AND asset.\"id\"::text NOT IN ({viewedStr}) AND asset.\"originalPath\" NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
             case 'album':
-                queryFrom = f"FROM asset_exif JOIN asset ON asset.\"id\" = asset_exif.\"assetId\" JOIN album_asset ON asset.id = album_asset.\"assetsId\" WHERE album_asset.\"albumsId\" = '{settings['albumId']}' AND asset.\"type\" = 'IMAGE' AND asset.\"visibility\" = 'timeline' AND asset.\"deletedAt\" IS NULL AND asset.\"originalPath\"NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
+                queryFrom = f"FROM asset_exif JOIN asset ON asset.\"id\" = asset_exif.\"assetId\" JOIN album_asset ON asset.id = album_asset.\"assetsId\" WHERE album_asset.\"albumsId\" = '{settings['albumId']}' AND asset.\"type\" = 'IMAGE' AND asset.\"visibility\" = 'timeline' AND asset.\"deletedAt\" IS NULL AND asset.\"id\"::text NOT IN ({viewedStr}) AND asset.\"originalPath\"NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
             case _:
                 logger(3, "Error: Incorrect or Missing Mode.")
-                return str(e), 500   
+                generate_image()   
 
         try:
             cursor.execute(f"{querySelect} {queryFrom}")
@@ -201,9 +202,9 @@ def generate_image():
             exception_type, exception_object, exception_traceback = sys.exc_info()
             line_number = exception_traceback.tb_lineno
             logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
-            return str(e), 500  
+            generate_image()  
         finally:
-            conn.close()     
+            conn.close()
 
         if row:
             #Write found asset to log
@@ -275,7 +276,7 @@ def generate_image():
                 line_number = exception_traceback.tb_lineno
                 logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
                 saveViewed(id)
-                return str(e), 500       
+                generate_image()
     
             #Mark Image as Shown
             saveViewed(id)
@@ -293,7 +294,7 @@ def generate_image():
                 logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
                 logger(3, f"ERROR on line {str(id)}")
                 saveViewed(id)
-                return str(e), 500
+                generate_image()
 
             #Resetting tracker
             firstAttempt = True
@@ -308,11 +309,15 @@ def generate_image():
                 viewed.clear()
 
                 #Removed Viewed Log
-                if container:
-                    os.remove("/config/viewed.log")
-                else:
-                    os.remove("viewed.log")
-
+                try:
+                    if container:
+                        os.remove("/config/viewed.log")
+                    else:
+                        os.remove("viewed.log")
+                except Exception as e:
+                    exception_type, exception_object, exception_traceback = sys.exc_info()
+                    line_number = exception_traceback.tb_lineno
+                    logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
                 firstAttempt = False
             else:
                 logger(4, "WARNING: No Image Found")
