@@ -21,3 +21,5 @@ server/error.log
 server/viewed.log
 frontend/error.log
 frontend/temp.jpg
+frontend/debug.log
+frontend/warning.log
