@@ -105,39 +105,32 @@ while True:
     error = True
 
     #Downloading the new image. Loops while there is an error
-    while error:
-        try:
-            with open('temp.jpg', 'wb') as handle:
-                logger(7,"Requesting New Image")
-                response = requests.get("http://{}/generate_image".format(settings["server"]), stream=True)
-                if not response.ok:
-                    #The Response is not 200 or Good
-                    logger(3, response)
-                    logger(4, "Server Response: Not Ok")
-                    error = True
-                else:
-                    logger(4, "Server Response: Ok")
-                    error = False
-            
-                for block in response.iter_content(1024):
-                    if not block:
-                        break
-            
-                    handle.write(block)
+    try:
+        with open('temp.jpg', 'wb') as handle:
+            logger(7,"Requesting New Image")
+            response = requests.get("http://{}/generate_image".format(settings["server"]), stream=True)
+            if not response.ok:
+                #The Response is not 200 or Good
+                logger(4, response)
+                logger(7, "Server Response: Not Ok")
+                error = True
+            else:
+                logger(7, "Server Response: Ok")
+                error = False
+        
+            for block in response.iter_content(1024):
+                if not block:
+                    break
+        
+                handle.write(block)
 
-            #If Not Error Update Image File
-            if not error:
-                if os.path.isfile('image.jpg'):
-                    os.remove('image.jpg')
-                os.rename('temp.jpg','image.jpg')
-        except Exception as e:
-            logger(3, e)
-            error = True
-
-        if error:
-            logger(7, 'Sleeping for 3 seconds')
-            time.sleep(3)
-            logger(7, 'Waking Up')
+        #If Not Error Update Image File
+        if not error:
+            if os.path.isfile('image.jpg'):
+                os.remove('image.jpg')
+            os.rename('temp.jpg','image.jpg')
+    except Exception as e:
+        logger(3, e)
 
             
     while time.time() - lastDownload < float(settings['delay']):
