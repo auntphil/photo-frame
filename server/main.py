@@ -155,7 +155,7 @@ def generate_image():
     except Exception as e:
         logger(3, "Error: Error loading settings")
         logger(3, e)
-        generate_image()
+        return str(e), 500
 
 
     
@@ -193,7 +193,7 @@ def generate_image():
                 queryFrom = f"FROM asset_exif JOIN asset ON asset.\"id\" = asset_exif.\"assetId\" JOIN album_asset ON asset.id = album_asset.\"assetsId\" WHERE album_asset.\"albumsId\" = '{settings['albumId']}' AND asset.\"type\" = 'IMAGE' AND asset.\"visibility\" = 'timeline' AND asset.\"deletedAt\" IS NULL AND asset.\"id\"::text NOT IN ({viewedStr}) AND asset.\"originalPath\"NOT LIKE '%gif%' ORDER BY RANDOM() LIMIT 1"
             case _:
                 logger(3, "Error: Incorrect or Missing Mode.")
-                generate_image()   
+                return str(e), 500   
 
         try:
             cursor.execute(f"{querySelect} {queryFrom}")
@@ -202,7 +202,7 @@ def generate_image():
             exception_type, exception_object, exception_traceback = sys.exc_info()
             line_number = exception_traceback.tb_lineno
             logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
-            generate_image()  
+            return str(e), 500  
         finally:
             conn.close()
 
@@ -276,7 +276,7 @@ def generate_image():
                 line_number = exception_traceback.tb_lineno
                 logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
                 saveViewed(id)
-                generate_image()
+                return str(e), 500       
     
             #Mark Image as Shown
             saveViewed(id)
@@ -294,7 +294,7 @@ def generate_image():
                 logger(3, f"ERROR on line {str(line_number)}: {str(e)}")
                 logger(3, f"ERROR on line {str(id)}")
                 saveViewed(id)
-                generate_image()
+                return str(e), 500
 
             #Resetting tracker
             firstAttempt = True
