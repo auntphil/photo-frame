@@ -1,5 +1,5 @@
 import tkinter as tk
-import os, requests, time, json, sys
+import os, requests, time, json
 from PIL import Image, ImageTk, ImageFile, ImageOps
 import datetime, time
 ImageFile.LOAD_TRUNCATED_IMAGES = True
